@@ -166,33 +166,27 @@ while(True):
         #cara = frame[y: y + h, w + w_rm: x + w - w_rm]      # Recorta la posicion de la cara en el frame
         #cara = cv2.cvtColor(cara, cv2.COLOR_BGR2GRAY)       # La pasa a escala de grises
         cara = cv2.equalizeHist(cara)                       # Normaliza la imagen
-        if cara.shape < (130, 130):                         # Reescala la cara a 130x130
-            cara = cv2.resize(cara, (130, 130), interpolation = cv2.INTER_AREA)
-        else:
-            cara = cv2.resize(cara, (130, 130), interpolation = cv2.INTER_CUBIC)
-        #'''
-        result = modelo_lpbh.predict(cara)  # Busca la foto mas parecida en el modelo entrado
+        print(type(cara))
+        if type(cara) == np.ndarray:
+            if cara.shape < (130, 130):                         # Reescala la cara a 130x130
+                cara = cv2.resize(cara, (130, 130), interpolation = cv2.INTER_AREA)
+            elif cara.shape > (130, 130):
+                cara = cv2.resize(cara, (130, 130), interpolation = cv2.INTER_CUBIC)
+
+            result = modelo_lpbh.predict(cara)  # Busca la foto mas parecida en el modelo entrado
                                             # result es un arreglo de 2 valores: La etiqueta y el valor de distancia
-        if result[1] < 90:
-            cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
-            cv2.putText(frame, nombres_dicc[result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
-        else:
-            cv2.rectangle(frame, (x,y), (x+w, y+h), (255,0,0), 2)
-        #'''
-        '''
-        for i, faces in enumerate(cara):
-            if len(fotos) == 0:
-                cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
-                cv2.rectangle(frame, (x+w_rm, y), (x+w-w_rm, y+h), (0,0,250), 2)
-            else:
-                result = modelo_lpbh.predict(cara)  # Busca la foto mas parecida en el modelo entrado
-                                                    # result es un arreglo de 2 valores: La etiqueta y el valor de distancia
-                if result[1] < 90:
-                    cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
-                    cv2.putText(frame, nombres_dicc[result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
+            for i, face in enumerate(cara):
+                if len(fotos) == 0:
+                    cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
+                    cv2.rectangle(frame, (x+w_rm, y), (x+w-w_rm, y+h), (0,0,250), 2)
                 else:
-                    cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
-        '''
+                    if result[1] < 90:
+                        cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
+                        cv2.putText(frame, nombres_dicc[result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
+                    else:
+                        cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
+                        cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
+        #'''
         '''
         for i, faces in enumerate(cara):
             if len(fotos) == 0:
