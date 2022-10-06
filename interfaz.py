@@ -8,6 +8,7 @@
 import os
 import cv2
 import sys
+import numpy as np
 from PyQt5.uic import loadUi
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QPixmap, QImage, QIcon
@@ -22,6 +23,8 @@ biggest_only = True
 flags_ = cv2.CASCADE_FIND_BIGGEST_OBJECT | \
         cv2.CASCADE_DO_ROUGH_SEARCH if biggest_only else \
         cv2.CASCADE_SCALE_IMAGE
+
+print()
 
 ######################################  VENTANA DE INSTRUCCIONES REGISTRO ######################################
 
@@ -114,8 +117,6 @@ class Registro(QMainWindow):
     def advertencia(self):          # Avisa que el programa ya esta funcionando
         QMessageBox.information(self, 'Informacion', 'El programa ya está registrando', QMessageBox.Ok)
 
-
-
 ########################################## PROGRAMA INICIAL ##########################################
 
 class ProgramaInicial(QMainWindow):
@@ -136,6 +137,7 @@ class ProgramaInicial(QMainWindow):
         self.encender.clicked.connect(self.grabar)
         self.detener.clicked.connect(self.quitar)
         self.registrarse.clicked.connect(self.registrar)
+        self.actualizar.clicked.connect(self.actual)
         self.salir.clicked.connect(self.salida)
         self.lomito()
         self.label_2.setPixmap(QPixmap('interfaz/logo_eln.png'))
@@ -184,7 +186,7 @@ class ProgramaInicial(QMainWindow):
         frame = frame.rgbSwapped()
         self.label.setPixmap(QPixmap.fromImage(frame))
 
-    # Apaga la carama
+    # Apaga la camara
     def quitar(self):
         if self.cam:
             self.cam = False
@@ -200,6 +202,27 @@ class ProgramaInicial(QMainWindow):
             self.cam = False
             self.camara.release()
             self.lomito()
+
+    # Entrena el modelo
+    def actual(self):
+        if len(os.listdir(os.path.dirname(os.path.abspath(__file__)) + '\Fotos')) == 0:
+            self.advertencia3()
+        else:
+            # Se juntan los datos
+            self.fotos = []
+            self.nombres = []
+            self.nombres_dic = []
+            personas = [persona for persona in os.listdir('Fotos/')]
+            for i, persona in enumerate(personas):
+                self.nombres_dic[i] = persona
+                for imagen in os.listdir('Fotos/' + persona):
+                    self.fotos.append(cv2.imread('Fotos/' + persona + '/' + imagen, 0))
+                    self.nombres.append(i)
+            self.nombres = np.array(self.nombres)
+            # Entrena el modelo
+            self.model_lpbh = cv2.face.LBPHFaceRecognizer_create()  # Crea el modelo
+            self.model_lpbh.train(self.fotos, self.nombres)         # Entrena el modelo
+            self.advertencia4()
 
     # Cierra el programa en modo seguro (apaga la camara)
     def salida(self):
@@ -217,6 +240,12 @@ class ProgramaInicial(QMainWindow):
     
     def advertencia2(self):
         QMessageBox.information(self, 'Error', 'La cámara ya está apagada', QMessageBox.Ok)
+
+    def advertencia3(self):
+        QMessageBox.information(self, 'Error', 'El directorio está vacío', QMessageBox.Ok)
+    
+    def advertencia4(self):
+        QMessageBox.information(self, 'Listo', 'La base de datos fue actualizada correctamente', QMessageBox.Ok)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
