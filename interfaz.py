@@ -24,8 +24,6 @@ flags_ = cv2.CASCADE_FIND_BIGGEST_OBJECT | \
         cv2.CASCADE_DO_ROUGH_SEARCH if biggest_only else \
         cv2.CASCADE_SCALE_IMAGE
 
-print()
-
 ######################################  VENTANA DE INSTRUCCIONES REGISTRO ######################################
 
 class Informaciones(QMainWindow):
@@ -133,6 +131,9 @@ class ProgramaInicial(QMainWindow):
         self.cam = False
         self.cont_int = 0
         self.cont_ini = 0
+        self.fotos = []
+        self.nombres = []
+        self.nombres_dic = {}
         # CONEXIONES CON BOTONES
         self.encender.clicked.connect(self.grabar)
         self.detener.clicked.connect(self.quitar)
@@ -178,10 +179,25 @@ class ProgramaInicial(QMainWindow):
                                                   flags = flags_)
         # Dibujo de rectangulo en las caras detectadas
         for (x,y,w,h) in pos_cara:
-            self.caras = grayscale[y: y + h, x: x + w]  # Recorta la posicion de la cara en el frame gris
-            self.caras = cv2.equalizeHist(self.caras)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 250), 2)
-
+            # Recorte
+            self.caras = grayscale[y: y + h, x: x + w]
+            # Reescalar
+            if self.caras.shape < (130,130):
+                self.caras = cv2.resize(self.caras, (130,130), interpolation=cv2.INTER_LINEAR) # INTER_CUBIC
+            elif self.caras.shape > (130,130):
+                self.caras = cv2.resize(self.caras, (130,130), interpolation=cv2.INTER_AREA)
+            # Deteccion
+            if len(self.fotos) == 0:
+                cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
+                cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,250), 2)
+            else:
+                self.result = self.model_lpbh.predict(self.caras)
+                if self.result[1] < 90:
+                    cv2.rectangle(frame, (x,y), (x+w,y+h), (255,0,0), 2)
+                    cv2.putText(frame, self.nombres_dic[self.result[0]], (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (250,0,0), cv2.LINE_4)
+                else:
+                    cv2.putText(frame, 'Desconocido', (pos_cara[0][0], pos_cara[0][1]-5), cv2.FONT_ITALIC, 1, (0,0,250), cv2.LINE_4)
+                    cv2.rectangle(frame, (x,y), (x+w,y+h), (0,0,250), 2)
         frame = QImage(frame, frame.shape[1], frame.shape[0], QImage.Format_RGB888)
         frame = frame.rgbSwapped()
         self.label.setPixmap(QPixmap.fromImage(frame))
@@ -209,9 +225,6 @@ class ProgramaInicial(QMainWindow):
             self.advertencia3()
         else:
             # Se juntan los datos
-            self.fotos = []
-            self.nombres = []
-            self.nombres_dic = []
             personas = [persona for persona in os.listdir('Fotos/')]
             for i, persona in enumerate(personas):
                 self.nombres_dic[i] = persona
